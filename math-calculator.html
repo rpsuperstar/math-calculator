@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高等数学计算器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.2/math.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-section {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 18px 24px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result-section {
+            margin-top: 30px;
+            padding: 24px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .result-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            word-break: break-all;
+        }
+
+        .result-equation {
+            font-size: 14px;
+            color: #999;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .examples {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f4ff;
+            border-radius: 12px;
+        }
+
+        .examples-title {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .examples-list {
+            list-style: none;
+            color: #666;
+            font-size: 13px;
+            line-height: 2;
+        }
+
+        .examples-list li::before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .symbol-panel {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .symbol-btn {
+            padding: 8px 14px;
+            font-size: 14px;
+            background: #f0f4ff;
+            border: 1px solid #dde3f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .symbol-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .symbol-btn:active {
+            transform: translateY(0);
+        }
+
+        .symbol-btn.primary {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .symbol-btn.primary:hover {
+            background: #5a6fd6;
+            border-color: #5a6fd6;
+        }
+
+        .symbol-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .symbol-group-label {
+            font-size: 11px;
+            color: #999;
+            text-align: center;
+        }
+
+        .symbol-btn-group {
+            display: flex;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>∫ 高等数学计算器</h1>
+        <p class="subtitle">输入自然语言数学表达式，快速计算结果</p>
+        
+        <div class="input-section">
+            <input type="text" id="input" placeholder="例如：30开5次根号、2的10次方、sin(90)" />
+            <span class="input-icon">📐</span>
+        </div>
+        
+        <div class="symbol-panel">
+            <div class="symbol-group">
+                <div class="symbol-group-label">常数</div>
+                <div class="symbol-btn-group">
+                    <button class="symbol-btn" onclick="insertSymbol('π')">π</button>
+                    <button class="symbol-btn" onclick="insertSymbol('e')">e</button>
+                    <button class="symbol-btn" onclick="insertSymbol('i')">i</button>
+                </div>
+            </div>
+            <div class="symbol-group">
+                <div class="symbol-group-label">根号</div>
+                <div class="symbol-btn-group">
+                    <button class="symbol-btn" onclick="insertSymbol('根号')">√</button>
+                    <button class="symbol-btn" onclick="insertSymbol('开平方')">√²</button>
+                    <button class="symbol-btn" onclick="insertSymbol('开立方')">∛</button>
+                    <button class="symbol-btn" onclick="insertSymbol('开N次根号')">√ⁿ</button>
+                </div>
+            </div>
+            <div class="symbol-group">
+                <div class="symbol-group-label">三角函数</div>
+                <div class="symbol-btn-group">
+                    <button class="symbol-btn" onclick="insertSymbol('sin')">sin</button>
+                    <button class="symbol-btn" onclick="insertSymbol('cos')">cos</button>
+                    <button class="symbol-btn" onclick="insertSymbol('tan')">tan</button>
+                </div>
+            </div>
+            <div class="symbol-group">
+                <div class="symbol-group-label">对数</div>
+                <div class="symbol-btn-group">
+                    <button class="symbol-btn" onclick="insertSymbol('ln')">ln</button>
+                    <button class="symbol-btn" onclick="insertSymbol('log')">log</button>
+                </div>
+            </div>
+            <div class="symbol-group">
+                <div class="symbol-group-label">其他</div>
+                <div class="symbol-btn-group">
+                    <button class="symbol-btn" onclick="insertSymbol('绝对值')">|x|</button>
+                    <button class="symbol-btn" onclick="insertSymbol('的次方')">^</button>
+                    <button class="symbol-btn" onclick="insertSymbol('%')">%</button>
+                </div>
+            </div>
+            <div class="symbol-group">
+                <div class="symbol-group-label">括号</div>
+                <div class="symbol-btn-group">
+                    <button class="symbol-btn" onclick="insertSymbol('(')">(</button>
+                    <button class="symbol-btn" onclick="insertSymbol(')')">)</button>
+                    <button class="symbol-btn" onclick="insertSymbol('（')">（</button>
+                    <button class="symbol-btn" onclick="insertSymbol('）')">）</button>
+                </div>
+            </div>
+        </div>
+        
+        <button onclick="calculate()">计算</button>
+        
+        <div class="result-section" id="result">
+            <div class="result-label">计算结果</div>
+            <div class="result-value" id="resultValue"></div>
+            <div class="result-equation" id="resultEquation"></div>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+        
+        <div class="examples">
+            <div class="examples-title">支持的表达式示例</div>
+            <ul class="examples-list">
+                <li>30开5次根号</li>
+                <li>2的10次方</li>
+                <li>sin(90)</li>
+                <li>cos(60)</li>
+                <li>tan(45)</li>
+                <li>ln(10)</li>
+                <li>log(100)</li>
+                <li>sqrt(16)</li>
+                <li>绝对值(-5)</li>
+                <li>e的3次方</li>
+                <li>π的值</li>
+                <li>2+3*4</li>
+                <li>30%开3次根号</li>
+                <li>50%的平方根</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function parseNaturalLanguage(input) {
+            let expression = input.trim();
+            
+            expression = expression.replace(/（/g, '(').replace(/）/g, ')');
+            
+            expression = expression.replace(/(-?\d+(?:\.\d+)?)(%)/g, function(match, num) {
+                return (parseFloat(num) / 100).toString();
+            });
+            
+            expression = expression.replace(/π|pi|圆周率/g, 'pi');
+            expression = expression.replace(/(?<!Math\.)e值|(?<!Math\.)e的值/g, 'e');
+            expression = expression.replace(/i\s*[乘×]?\s*pi/g, 'i*pi');
+            console.log('After preprocessing:', expression);
+            
+            const numPattern = '(-?\\d+(?:\\.\\d+)?|pi|e|i|i\\*pi|i\\s*[乘×]?\\s*pi|i\\s*[乘×]?\\s*π)';
+            
+            const patterns = [
+                { regex: /e\s*的\s*i\s*[乘×]?\s*(?:π|pi)\s*次方?/, replace: 'exp(i*pi)' },
+                { regex: /(-?\d+(?:\.\d+)?)\s*开\s*i\*\s*pi\s*次\s*根号?/, replace: 'pow($1, 1/(i*pi))' },
+                { regex: new RegExp('e\\s*的\\s*(-?\\d+(?:\\.\\d+)?)\\s*次方'), replace: 'exp($1)' },
+                { regex: /虚数单位|i/g, replace: 'i' },
+                { regex: /根号\s*\(\s*-(-?\d+(?:\.\d+)?)\s*\)/, replace: 'i*sqrt($1)' },
+                { regex: /根号\s*(-?\d+(?:\.\d+)?)/, replace: 'sqrt($1)' },
+                { regex: /开平方\s*(-?\d+(?:\.\d+)?)/, replace: 'sqrt($1)' },
+                { regex: /开根号\s*(-?\d+(?:\.\d+)?)/, replace: 'sqrt($1)' },
+                { regex: /绝对值\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'abs($1)' },
+                { regex: /平方\s*根\s*(\(|)(-?\d+(?:\.\d+)?)(\)|)/, replace: 'sqrt($2)' },
+                { regex: /立方\s*根\s*(\(|)(-?\d+(?:\.\d+)?)(\)|)/, replace: 'cbrt($2)' },
+                { regex: /(?<!\.)sin\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'sin($1 * pi / 180)' },
+                { regex: /(?<!\.)cos\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'cos($1 * pi / 180)' },
+                { regex: /(?<!\.)tan\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'tan($1 * pi / 180)' },
+                { regex: /(?<!\.)asin\s*\(\s*(-?[\d.]+)\s*\)/, replace: 'asin($1) * 180 / pi' },
+                { regex: /(?<!\.)acos\s*\(\s*(-?[\d.]+)\s*\)/, replace: 'acos($1) * 180 / pi' },
+                { regex: /(?<!\.)atan\s*\(\s*(-?[\d.]+)\s*\)/, replace: 'atan($1) * 180 / pi' },
+                { regex: /(?<!\.)ln\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'log($1)' },
+                { regex: /(?<!\.)log\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'log10($1)' },
+                { regex: /(?<!\.)sqrt\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'sqrt($1)' },
+                { regex: /(?<!\.)abs\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/, replace: 'abs($1)' },
+                { regex: new RegExp(numPattern + '\\s*开\\s*' + numPattern + '\\s*次\\s*根号?'), replace: 'pow($1, 1/$2)' },
+                { regex: new RegExp(numPattern + '\\s*的\\s*' + numPattern + '\\s*次方'), replace: 'pow($1, $2)' },
+                { regex: new RegExp(numPattern + '\\s*的\\s*' + numPattern + '\\s*次幂'), replace: 'pow($1, $2)' },
+                { regex: new RegExp(numPattern + '\\s*平方'), replace: 'pow($1, 2)' },
+                { regex: new RegExp(numPattern + '\\s*立方'), replace: 'pow($1, 3)' },
+                { regex: new RegExp(numPattern + '\\s*开平方'), replace: 'sqrt($1)' },
+                { regex: new RegExp(numPattern + '\\s*开根号'), replace: 'sqrt($1)' },
+                { regex: new RegExp(numPattern + '\\s*开立方'), replace: 'cbrt($1)' },
+                { regex: new RegExp(numPattern + '\\s*的平方根'), replace: 'sqrt($1)' },
+                { regex: new RegExp(numPattern + '\\s*的立方根'), replace: 'cbrt($1)' },
+                { regex: /e\^\s*(-?\d+(?:\.\d+)?)/, replace: 'exp($1)' },
+                { regex: new RegExp(numPattern + '\\s*除以\\s*' + numPattern), replace: '$1 / $2' },
+                { regex: new RegExp(numPattern + '\\s*乘\\s*' + numPattern), replace: '$1 * $2' },
+                { regex: new RegExp(numPattern + '\\s*加\\s*' + numPattern), replace: '$1 + $2' },
+                { regex: new RegExp(numPattern + '\\s*减\\s*' + numPattern), replace: '$1 - $2' },
+                { regex: new RegExp(numPattern + '\\s*余\\s*' + numPattern), replace: '$1 % $2' },
+                { regex: /(\([^)]+\))\s*乘\s*(\([^)]+\))/, replace: '$1 * $2' },
+                { regex: /(\([^)]+\))\s*加\s*(\([^)]+\))/, replace: '$1 + $2' },
+                { regex: /(\([^)]+\))\s*减\s*(\([^)]+\))/, replace: '$1 - $2' },
+                { regex: /(\([^)]+\))\s*除以\s*(\([^)]+\))/, replace: '$1 / $2' },
+                { regex: /(\([^)]+\))\s*乘\s*(-?\d+(?:\.\d+)?)/, replace: '$1 * $2' },
+                { regex: /(-?\d+(?:\.\d+)?)\s*乘\s*(\([^)]+\))/, replace: '$1 * $2' },
+                { regex: /(\([^)]+\))\s*加\s*(-?\d+(?:\.\d+)?)/, replace: '$1 + $2' },
+                { regex: /(-?\d+(?:\.\d+)?)\s*加\s*(\([^)]+\))/, replace: '$1 + $2' },
+                { regex: /(\([^)]+\))\s*的\s*(-?\d+(?:\.\d+)?)\s*次方/, replace: 'pow($1, $2)' }
+            ];
+            
+            let originalExpression = expression;
+            
+            patterns.forEach(pattern => {
+                expression = expression.replace(pattern.regex, pattern.replace);
+            });
+            
+            if (!/(?:pow|exp|sqrt|cbrt|sin|cos|tan|log|log10|abs|asin|acos|atan)\(|pi|e|i|\d/.test(expression)) {
+                expression = input;
+            }
+            
+            return { expression, originalExpression };
+        }
+
+        function insertSymbol(symbol) {
+            const input = document.getElementById('input');
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const value = input.value;
+            const selectedText = value.substring(start, end);
+            
+            if (symbol === '绝对值') {
+                if (selectedText) {
+                    // 选中文字：在选中文字前后添加绝对值
+                    input.value = value.substring(0, start) + '绝对值(' + selectedText + ')' + value.substring(end);
+                    input.setSelectionRange(start + 4, start + 4 + selectedText.length);
+                } else {
+                    // 没有选中文字：把光标前的所有数字包起来
+                    const beforeCursor = value.substring(0, start);
+                    const afterCursor = value.substring(start);
+                    const match = beforeCursor.match(/^(-?\d+(?:\.\d+)?)$/);
+                    if (match) {
+                        // 光标前是独立数字，整个数字包起来
+                        input.value = '绝对值(' + match[1] + ')' + afterCursor;
+                        input.setSelectionRange(4, 4 + match[1].length);
+                    } else {
+                        // 光标前不是独立数字，插入绝对值括号
+                        input.value = beforeCursor + '绝对值()' + afterCursor;
+                        input.setSelectionRange(start + 4, start + 4);
+                    }
+                }
+            } else if (symbol === '开N次根号') {
+                if (selectedText) {
+                    input.value = value.substring(0, start) + selectedText + '开 次根号' + value.substring(end);
+                    input.setSelectionRange(start + selectedText.length + 1, start + selectedText.length + 1);
+                } else {
+                    input.value = value.substring(0, start) + '开 次根号' + value.substring(end);
+                    input.setSelectionRange(start + 1, start + 1);
+                }
+            } else if (symbol === 'sin' || symbol === 'cos' || symbol === 'tan' || symbol === 'ln' || symbol === 'log') {
+                if (selectedText) {
+                    input.value = value.substring(0, start) + symbol + '(' + selectedText + ')' + value.substring(end);
+                    input.setSelectionRange(start + symbol.length + 1, start + symbol.length + 1 + selectedText.length);
+                } else {
+                    input.value = value.substring(0, start) + symbol + '()' + value.substring(end);
+                    input.setSelectionRange(start + symbol.length + 1, start + symbol.length + 1);
+                }
+            } else {
+                if (symbol === '的次方') {
+                    input.value = value.substring(0, start) + selectedText + symbol + value.substring(end);
+                    input.setSelectionRange(start + selectedText.length + 1, start + selectedText.length + 1);
+                } else {
+                    input.value = value.substring(0, start) + selectedText + symbol + value.substring(end);
+                    const newPosition = start + selectedText.length + symbol.length;
+                    input.setSelectionRange(newPosition, newPosition);
+                }
+            }
+            
+            input.focus();
+        }
+
+        function calculate() {
+            const input = document.getElementById('input').value;
+            const resultSection = document.getElementById('result');
+            const resultValue = document.getElementById('resultValue');
+            const resultEquation = document.getElementById('resultEquation');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            if (!input.trim()) {
+                alert('请输入数学表达式');
+                return;
+            }
+            
+            try {
+                const { expression, originalExpression } = parseNaturalLanguage(input);
+                console.log('Parsed expression:', expression);
+                
+                const result = math.evaluate(expression);
+                
+                let resultStr = '';
+                if (typeof result === 'object' && result.im !== undefined) {
+                    const re = parseFloat(result.re.toFixed(10));
+                    const im = parseFloat(result.im.toFixed(10));
+                    if (re !== 0 && im !== 0) {
+                        const imStr = im === 1 ? 'i' : im === -1 ? '-i' : `${im}i`;
+                        resultStr = `${re} + ${imStr}`;
+                    } else if (re !== 0) {
+                        resultStr = `${re}`;
+                    } else {
+                        if (im === 1) {
+                            resultStr = 'i';
+                        } else if (im === -1) {
+                            resultStr = '-i';
+                        } else {
+                            resultStr = `${im}i`;
+                        }
+                    }
+                } else if (typeof result === 'number') {
+                    if (isNaN(result) || !isFinite(result)) {
+                        throw new Error('计算结果无效');
+                    }
+                    resultStr = parseFloat(result.toFixed(10)).toString();
+                } else {
+                    resultStr = result.toString();
+                }
+                
+                resultSection.classList.add('show');
+                resultValue.textContent = resultStr;
+                resultEquation.textContent = `${originalExpression} = ${expression}`;
+                errorMessage.textContent = '';
+            } catch (error) {
+                resultSection.classList.add('show');
+                resultValue.textContent = '';
+                resultEquation.textContent = '';
+                errorMessage.textContent = '无法解析该表达式，请尝试使用支持的格式';
+            }
+        }
+
+        document.getElementById('input').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                calculate();
+            }
+        });
+    </script>
+</body>
+</html>
