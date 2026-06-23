@@ -1,6 +1,6 @@
 # 📐 Advanced Math Calculator
 
-> English | [中文](README.md)
+> English | [中文](readme.md)
 
 A natural language math calculator supporting complex number operations, trigonometric functions, logarithms, roots, and more.
 
